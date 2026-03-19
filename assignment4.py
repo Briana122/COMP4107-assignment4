@@ -21,9 +21,9 @@ class Linnaeus5Dataset(torch.utils.data.Dataset):
       self.transform = transforms.Compose([
           transforms.Resize((32, 32)),        # Ensure correct size
           transforms.ToTensor(),              # Convert to tensor [0,1]
-          # Optional normalization (safe choice)
-          # transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+          # transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))  # Normalize to [-1,1]
       ])
+
     # Return nothing    
 
   def __len__(self):
@@ -61,7 +61,6 @@ def linnaeus5_autoencoder(training_data_directory):
   train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True)
   val_loader = DataLoader(val_dataset, batch_size=32, shuffle=False)
 
-  # model is a trained cnn autoencoder model for this task
   class Autoencoder(torch.nn.Module):
     def __init__(self):
       super().__init__()
@@ -79,7 +78,6 @@ def linnaeus5_autoencoder(training_data_directory):
           torch.nn.ConvTranspose2d(32, 16, kernel_size=4, stride=2, padding=1), # 8→16
           torch.nn.ReLU(),
           torch.nn.ConvTranspose2d(16, 3, kernel_size=4, stride=2, padding=1),  # 16→32
-          torch.nn.Sigmoid()  # output in [0,1]
       )
 
     def forward(self, x):
@@ -97,28 +95,19 @@ def linnaeus5_autoencoder(training_data_directory):
   num_epochs = 10
 
   for epoch in range(num_epochs):
-      model.train()
-      train_loss = 0
+    model.train()
+    train_loss = 0
 
-      for x, y in train_loader:
-          optimizer.zero_grad()
-          outputs = model(x)
-          loss = criterion(outputs, y)
-          loss.backward()
-          optimizer.step()
+    for x, y in train_loader:
+      optimizer.zero_grad()
+      outputs = model(x)
+      loss = criterion(outputs, y)
+      loss.backward()
+      optimizer.step()
 
-          train_loss += loss.item()
+      train_loss += loss.item()
 
-  # Compute final training performance
-  model.eval()
-  training_loss = 0
-  with torch.no_grad():
-      for x, y in train_loader:
-          outputs = model(x)
-          loss = criterion(outputs, y)
-          training_loss += loss.item()
-  # training_performance is the performance of the model on the training set
-  training_performance = training_loss / len(train_loader)
+    training_performance = train_loss / len(train_loader)
 
   # Compute validation performance
   validation_loss = 0
@@ -132,3 +121,8 @@ def linnaeus5_autoencoder(training_data_directory):
   validation_performance = validation_loss / len(val_loader)
 
   return model, training_performance, validation_performance
+
+# model, training_performance, validation_performance = linnaeus5_autoencoder("Linnaeus 5 32X32")
+
+# print("Training Performance:", training_performance)
+# print("Validation Performance:", validation_performance)
