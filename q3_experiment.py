@@ -7,7 +7,7 @@ from torch.utils.data import DataLoader, random_split
 def train_autoencoder(dataset_path, encoding_channels=32, num_layers=2, num_epochs=10):
     dataset = Linnaeus5Dataset(dataset_path)
 
-    train_size = int(0.8 * len(dataset))
+    train_size = int(0.7 * len(dataset))
     val_size = len(dataset) - train_size
     train_dataset, val_dataset = random_split(dataset, [train_size, val_size])
 
@@ -132,16 +132,16 @@ for size in encoding_sizes:
             "num_epochs": 10
         }
 
-plt.plot(encoding_sizes, train_results, marker='o', label="Train")
-plt.plot(encoding_sizes, val_results, marker='o', linestyle='--', label="Validation")
-plt.xlabel("Encoding Size")
-plt.ylabel("Final Loss")
-plt.title("Encoding Size vs Performance")
-plt.legend()
-plt.show()
+# plt.plot(encoding_sizes, train_results, marker='o', label="Train")
+# plt.plot(encoding_sizes, val_results, marker='o', linestyle='--', label="Validation")
+# plt.xlabel("Encoding Size")
+# plt.ylabel("Final Loss")
+# plt.title("Encoding Size vs Performance")
+# plt.legend()
+# plt.show()
 
 
-# (b) Number of layers experiment
+# # (b) Number of layers experiment
 layers_list = [1, 2, 3, 4, 5]
 train_results = []
 val_results = []
@@ -165,17 +165,17 @@ for layers in layers_list:
             "num_epochs": 10
         }
 
-plt.plot(layers_list, train_results, marker='o', label="Train")
-plt.plot(layers_list, val_results, marker='o', linestyle='--', label="Validation")
-plt.xlabel("Number of Layers")
-plt.ylabel("Final Loss")
-plt.title("Layers vs Performance")
-plt.legend()
-plt.show()
+# plt.plot(layers_list, train_results, marker='o', label="Train")
+# plt.plot(layers_list, val_results, marker='o', linestyle='--', label="Validation")
+# plt.xlabel("Number of Layers")
+# plt.ylabel("Final Loss")
+# plt.title("Layers vs Performance")
+# plt.legend()
+# plt.show()
 
 
 # (c) Epoch experiment
-epoch_values = [5, 10, 15, 20, 25]
+epoch_values = [10, 20, 30, 40, 50]
 all_train_loss = []
 all_val_loss = []
 

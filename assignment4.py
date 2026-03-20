@@ -52,8 +52,8 @@ def linnaeus5_autoencoder(training_data_directory):
   # training_data_directory is the path to a directory containing the training data
   dataset = Linnaeus5Dataset(training_data_directory)
 
-  # split into training and validation sets (80 and 20)
-  train_size = int(0.8 * len(dataset))
+  # split into training and validation sets (70 and 30)
+  train_size = int(0.7 * len(dataset))
   val_size = len(dataset) - train_size
   train_dataset, val_dataset = random_split(dataset, [train_size, val_size])
 
