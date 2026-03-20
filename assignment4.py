@@ -2,7 +2,7 @@ import os
 from PIL import Image
 import torch
 from torch.utils.data import DataLoader, Dataset, random_split
-import torchvision.transforms as transforms
+import numpy as np
 
 # PyTorch dataset for the Linnaeus 5 dataset
 class Linnaeus5Dataset(torch.utils.data.Dataset):
@@ -11,20 +11,13 @@ class Linnaeus5Dataset(torch.utils.data.Dataset):
     # dataset_directory is the full path to the directory containing the dataset
       self.image_paths = []
 
-      # Walk through all subdirectories
       for root, dirs, files in os.walk(dataset_directory):
-          for file in files:
-              if file.lower().endswith(".jpg") or file.lower().endswith(".jpeg"):
-                  self.image_paths.append(os.path.join(root, file))
+            for file in files:
+                if file.lower().endswith((".jpg", ".jpeg")):
+                    self.image_paths.append(os.path.join(root, file))
 
-      # Define preprocessing transformations
-      self.transform = transforms.Compose([
-          transforms.Resize((32, 32)),        # Ensure correct size
-          transforms.ToTensor(),              # Convert to tensor [0,1]
-          # transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))  # Normalize to [-1,1]
-      ])
-
-    # Return nothing    
+      self.mean = torch.tensor([0.485, 0.456, 0.406])
+      self.std  = torch.tensor([0.229, 0.224, 0.225])
 
   def __len__(self):
     # num_samples is the total number of samples in the dataset
@@ -36,10 +29,17 @@ class Linnaeus5Dataset(torch.utils.data.Dataset):
     # index is the index of the sample to be retrieved
     img_path = self.image_paths[index]
     image = Image.open(img_path).convert("RGB")
-    
-    # Preprocessing
+
+    image = image.resize((32, 32))
+
+    image = torch.from_numpy(
+            np.array(image, dtype=np.float32) / 255.0
+        ).permute(2, 0, 1)
+
+    image = (image - self.mean[:, None, None]) / self.std[:, None, None]
+
     # x is one sample of data
-    x = self.transform(image)
+    x = image
 
     # y is the same sample of data (autoencoder target is the same as input)
     y = x
@@ -52,12 +52,10 @@ def linnaeus5_autoencoder(training_data_directory):
   # training_data_directory is the path to a directory containing the training data
   dataset = Linnaeus5Dataset(training_data_directory)
 
-  # split into training and validation sets (70 and 30)
   train_size = int(0.7 * len(dataset))
   val_size = len(dataset) - train_size
   train_dataset, val_dataset = random_split(dataset, [train_size, val_size])
 
-  # dataloaders
   train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True)
   val_loader = DataLoader(val_dataset, batch_size=32, shuffle=False)
 
@@ -65,7 +63,6 @@ def linnaeus5_autoencoder(training_data_directory):
     def __init__(self):
       super().__init__()
 
-      # Encoder (Conv2D)
       self.encoder = torch.nn.Sequential(
           torch.nn.Conv2d(3, 16, kernel_size=3, stride=2, padding=1),  # 32→16
           torch.nn.ReLU(),
@@ -73,7 +70,6 @@ def linnaeus5_autoencoder(training_data_directory):
           torch.nn.ReLU()
       )
 
-      # Decoder (ConvTranspose2D)
       self.decoder = torch.nn.Sequential(
           torch.nn.ConvTranspose2d(32, 16, kernel_size=4, stride=2, padding=1), # 8→16
           torch.nn.ReLU(),
@@ -87,11 +83,9 @@ def linnaeus5_autoencoder(training_data_directory):
 
   model = Autoencoder()
 
-  # Loss and optimizer
   criterion = torch.nn.MSELoss()
   optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 
-  # Training loop
   num_epochs = 10
 
   for epoch in range(num_epochs):
@@ -109,7 +103,6 @@ def linnaeus5_autoencoder(training_data_directory):
 
     training_performance = train_loss / len(train_loader)
 
-  # Compute validation performance
   validation_loss = 0
   with torch.no_grad():
       for x, y in val_loader:
@@ -117,12 +110,14 @@ def linnaeus5_autoencoder(training_data_directory):
           loss = criterion(outputs, y)
           validation_loss += loss.item()
 
-  # validation_performance is the performance of the model on the validation set
   validation_performance = validation_loss / len(val_loader)
 
+  # model is a trained cnn autoencoder model for this task
+  # training_performance is the performance of the model on the training set
+  # validation_performance is the performance of the model on the validation set
   return model, training_performance, validation_performance
 
-# model, training_performance, validation_performance = linnaeus5_autoencoder("Linnaeus 5 32X32")
+model, training_performance, validation_performance = linnaeus5_autoencoder("Linnaeus 5 32X32")
 
-# print("Training Performance:", training_performance)
-# print("Validation Performance:", validation_performance)
+print("Training Performance:", training_performance)
+print("Validation Performance:", validation_performance)
